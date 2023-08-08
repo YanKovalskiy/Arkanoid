@@ -6,7 +6,7 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
 #  Delay before refresh
-FPS = 30
+FPS = 60
 
 #  Colors
 BLACK = (0, 0, 0)
