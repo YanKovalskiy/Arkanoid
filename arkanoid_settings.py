@@ -1,5 +1,5 @@
 #  Title of game's window
-SCREEN_TITLE = 'Арканоид'
+SCREEN_TITLE = 'Arkanoid'
 
 #  Window size
 SCREEN_WIDTH = 800

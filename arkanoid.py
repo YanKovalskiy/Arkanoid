@@ -60,10 +60,15 @@ class Ball:
             self.dy = -self.dy
         self.y += self.dy
 
-
     def move_with_platform(self, platform):
         self.x = platform.x + platform.width // 2
         self.y = platform.y - self.radius
+
+    def platform_collision(self, platform):
+        if not self.on_platform:
+            if platform.x <= self.x <= platform.x + platform.width:
+                if self.y + self.radius >= platform.y:
+                    self.dy = -self.dy
 
 
 class Platform:
@@ -74,9 +79,6 @@ class Platform:
         self.y = SCREEN_HEIGHT - self.height - 1
         self.dx = 5
         self.direction = 'stop'
-
-    def get_height(self):
-        return self.height
 
     def move(self):
         if self.direction == 'left' and self.x >= self.dx:
@@ -127,6 +129,7 @@ class GameLevelHandler:
             ball.move_with_platform(self.platform)
         else:
             ball.move()
+            ball.platform_collision(self.platform)
         self.graphic_processor.draw_ball(ball)
 
     def main_loop(self):
