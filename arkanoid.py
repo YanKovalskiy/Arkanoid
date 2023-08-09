@@ -48,9 +48,18 @@ class Ball:
             self.y = start_y - self.radius
         else:
             self.y = start_y
+        self.dx = 5
+        self.dy = -5
 
     def move(self):
-        pass
+        if self.x + self.dx > SCREEN_WIDTH - self.radius or self.x + self.dx < self.radius:
+            self.dx = -self.dx
+        self.x += self.dx
+
+        if self.y + self.dy > SCREEN_HEIGHT - self.radius or self.y + self.dy < self.radius:
+            self.dy = -self.dy
+        self.y += self.dy
+
 
     def move_with_platform(self, platform):
         self.x = platform.x + platform.width // 2
@@ -101,6 +110,9 @@ class GameLevelHandler:
                     self.platform.direction = 'right'
                 elif event.key == pygame.K_ESCAPE:
                     self.end_game = True
+                elif event.key == pygame.K_SPACE:
+                    for ball in self.balls:
+                        ball.on_platform = False
 
             elif event.type == pygame.KEYUP:
                 if event.key in [pygame.K_LEFT, pygame.K_RIGHT]:
