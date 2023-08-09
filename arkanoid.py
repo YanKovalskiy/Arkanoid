@@ -40,14 +40,21 @@ class GraphicProcessor:
 
 
 class Ball:
-    def __init__(self, start_x, start_y):
+    def __init__(self, start_x, start_y, on_platform):
+        self.on_platform = on_platform
         self.radius = 7
         self.x = start_x
-        self.y = start_y - self.radius
-
+        if self.on_platform:
+            self.y = start_y - self.radius
+        else:
+            self.y = start_y
 
     def move(self):
         pass
+
+    def move_with_platform(self, platform):
+        self.x = platform.x + platform.width // 2
+        self.y = platform.y - self.radius
 
 
 class Platform:
@@ -76,7 +83,7 @@ class GameLevelHandler:
         self.graphic_processor = GraphicProcessor(work_screen)
         self.platform = Platform()
         self.balls = []
-        self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y))
+        self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
 
     def event_handler(self):
         """ Обработка событий окна.
@@ -104,7 +111,10 @@ class GameLevelHandler:
         self.graphic_processor.draw_platform(self.platform)
 
     def ball_handler(self, ball):
-        ball.move()
+        if ball.on_platform:
+            ball.move_with_platform(self.platform)
+        else:
+            ball.move()
         self.graphic_processor.draw_ball(ball)
 
     def main_loop(self):
@@ -119,11 +129,11 @@ class GameLevelHandler:
             self.event_handler()
             self.graphic_processor.fill_work_screen(BLACK)
 
+            self.platform_handler()
+
             for ball in self.balls:
                 self.ball_handler(ball)
 
-            self.platform_handler()
-            
             pygame.display.flip()
 
         return self.end_game
