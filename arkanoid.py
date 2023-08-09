@@ -73,17 +73,31 @@ class Ball:
         self.dy = -5
 
     def move(self):
+        """
+
+        :return: bool True - out of screen, False - else
+         """
         if self.x + self.dx > SCREEN_WIDTH - self.radius or self.x + self.dx < self.radius:
             self.dx = -self.dx
         self.x += self.dx
 
-        if self.y + self.dy > SCREEN_HEIGHT - self.radius or self.y + self.dy < self.radius:
+        if self.y + self.dy < self.radius:
             self.dy = -self.dy
         self.y += self.dy
+
+        if self.y + self.dy > SCREEN_HEIGHT:
+            return True
+        else:
+            return False
 
     def move_with_platform(self, platform):
         self.x = platform.x + platform.width // 2
         self.y = platform.y - self.radius
+
+    def set_ball_initial_position(self, x, y, on_platform):
+        self.x = x
+        self.y = y
+        self.on_platform = on_platform
 
     def object_collision(self, game_object):
         collision = False
@@ -178,7 +192,10 @@ class GameLevelHandler:
         if ball.on_platform:
             ball.move_with_platform(self.platform)
         else:
-            ball.move()
+            if ball.move():
+                ball.set_ball_initial_position(self.platform.x + self.platform.width // 2,
+                                               self.platform.y, on_platform=True)
+
             ball.object_collision(self.platform)
 
             destroy_bricks = []
