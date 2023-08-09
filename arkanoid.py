@@ -38,16 +38,27 @@ class GraphicProcessor:
         pygame.draw.circle(self.screen, SILVER, (x, y), radius)
         pygame.draw.circle(self.screen, WHITE, (x - radius // 2, y - radius // 2), radius // 2)
 
+    def draw_brick(self, brick):
+        if brick.hardness != 0:
+            pygame.draw.rect(self.screen, WHITE, (brick.x, brick.y, BRICK_WIDTH, BRICK_HEIGHT), 1)
+
+
+class Brick:
+    def __init__(self, x, y, hardness):
+        self.x = x
+        self.y = y
+        self.hardness = hardness
+
 
 class Ball:
-    def __init__(self, start_x, start_y, on_platform):
+    def __init__(self, x, y, on_platform):
         self.on_platform = on_platform
         self.radius = 7
-        self.x = start_x
+        self.x = x
         if self.on_platform:
-            self.y = start_y - self.radius
+            self.y = y - self.radius
         else:
-            self.y = start_y
+            self.y = y
         self.dx = 5
         self.dy = -5
 
@@ -95,6 +106,12 @@ class GameLevelHandler:
         self.platform = Platform()
         self.balls = []
         self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
+        self.level = LEVEL_01
+        self.bricks = []
+
+        for k, line in enumerate(self.level):
+            for i, hardness in enumerate(self.level[k]):
+                self.bricks.append(Brick(BRICK_WIDTH*i, TOP_INDENT + BRICK_HEIGHT*k, hardness))
 
     def event_handler(self):
         """ Обработка событий окна.
@@ -148,6 +165,9 @@ class GameLevelHandler:
 
             for ball in self.balls:
                 self.ball_handler(ball)
+
+            for brick in self.bricks:
+                self.graphic_processor.draw_brick(brick)
 
             pygame.display.flip()
 
