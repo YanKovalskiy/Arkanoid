@@ -38,16 +38,26 @@ class GraphicProcessor:
         pygame.draw.circle(self.screen, SILVER, (x, y), radius)
         pygame.draw.circle(self.screen, WHITE, (x - radius // 2, y - radius // 2), radius // 2)
 
+    def _brick(self, brick, main_color, dark_color):
+        pygame.draw.rect(self.screen, main_color, (brick.x, brick.y, brick.width, brick.height))
+        pygame.draw.rect(self.screen, dark_color, (brick.x, brick.y, brick.width, brick.height), 1)
+
     def draw_brick(self, brick):
-        if brick.hardness != 0:
-            pygame.draw.rect(self.screen, WHITE, (brick.x, brick.y, BRICK_WIDTH, BRICK_HEIGHT), 1)
+        if brick.hardness == 1:
+            self._brick(brick, GREEN_YELLOW, DARK_GREEN)
+        elif brick.hardness == 2:
+            self._brick(brick, RED, DARK_RED)
+        elif brick.hardness == 3:
+            self._brick(brick, ROYAL_BLUE, DARK_BLUE)
 
 
 class Brick:
-    def __init__(self, x, y, hardness):
-        self.x = x
-        self.y = y
+    def __init__(self, column_pos, line_pos, hardness):
+        self.x = BRICK_WIDTH * column_pos
+        self.y = TOP_INDENT + BRICK_HEIGHT * line_pos
         self.hardness = hardness
+        self.width = BRICK_WIDTH
+        self.height = BRICK_HEIGHT
 
 
 class Ball:
@@ -75,17 +85,39 @@ class Ball:
         self.x = platform.x + platform.width // 2
         self.y = platform.y - self.radius
 
-    def platform_collision(self, platform):
-        if not self.on_platform:
-            if platform.x <= self.x <= platform.x + platform.width:
-                if self.y + self.radius >= platform.y:
+    def object_collision(self, game_object):
+        collision = False
+        if isinstance(game_object, Platform):
+            if game_object.x <= self.x <= game_object.x + game_object.width:
+                if self.y + self.radius >= game_object.y:
                     self.dy = -self.dy
+                    collision = True
+
+        if isinstance(game_object, Brick):
+            if game_object.hardness > 0:
+                if game_object.y <= self.y + self.radius <= game_object.y:
+                    if game_object.x <= self.x <= game_object.x + game_object.width:
+                        self.dy = -self.dy
+                        collision = True
+                if game_object.y + game_object.height >= self.y - self.radius >= game_object.y:
+                    if game_object.x <= self.x <= game_object.x + game_object.width:
+                        self.dy = -self.dy
+                        collision = True
+                if self.y - self.radius > game_object.y and self.y + self.radius < game_object.y + game_object.height:
+                    if game_object.x <= self.x <= game_object.x + game_object.width:
+                        self.dx = -self.dx
+                        collision = True
+                    elif game_object.x >= self.x - self.radius >= game_object.x + game_object.width:
+                        self.dx = -self.dx
+                        collision = True
+
+        return collision
 
 
 class Platform:
     def __init__(self):
-        self.width = 64
-        self.height = 16
+        self.width = PLATFORM_WIDTH
+        self.height = PLATFORM_HEIGHT
         self.x = SCREEN_WIDTH // 2 - self.width
         self.y = SCREEN_HEIGHT - self.height - 1
         self.dx = 5
@@ -111,7 +143,8 @@ class GameLevelHandler:
 
         for k, line in enumerate(self.level):
             for i, hardness in enumerate(self.level[k]):
-                self.bricks.append(Brick(BRICK_WIDTH*i, TOP_INDENT + BRICK_HEIGHT*k, hardness))
+                if hardness != 0:
+                    self.bricks.append(Brick(i, k, hardness))
 
     def event_handler(self):
         """ Обработка событий окна.
@@ -146,7 +179,18 @@ class GameLevelHandler:
             ball.move_with_platform(self.platform)
         else:
             ball.move()
-            ball.platform_collision(self.platform)
+            ball.object_collision(self.platform)
+
+            destroy_bricks = []
+            for brick in self.bricks:
+                if ball.object_collision(brick):
+                    brick.hardness -= 1
+                    if brick.hardness == 0:
+                        destroy_bricks.append(brick)
+
+            for brick in destroy_bricks:
+                self.bricks.remove(brick)
+
         self.graphic_processor.draw_ball(ball)
 
     def main_loop(self):
