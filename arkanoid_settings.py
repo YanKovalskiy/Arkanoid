@@ -1,9 +1,15 @@
 #  Title of game's window
 SCREEN_TITLE = 'Arkanoid'
 
+#  Indent from the top of the screen
+TOP_INDENT = 50
+
+#  Info panel size
+INFO_PANEL_HEIGHT = 50
+
 #  Window size
 SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_HEIGHT = 500 + TOP_INDENT + INFO_PANEL_HEIGHT
 
 #  Delay before refresh
 FPS = 60
@@ -35,11 +41,8 @@ BRICK_WIDTH = 50
 BRICK_HEIGHT = 20
 
 #  Platform size
-PLATFORM_WIDTH = 64
+PLATFORM_WIDTH = 72
 PLATFORM_HEIGHT = 16
-
-#  Indent from the top of the screen
-TOP_INDENT = 50
 
 #  Levels
 LEVEL_01 = ((1,	1, 2, 3, 3,	3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 1),

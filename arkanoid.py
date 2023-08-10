@@ -7,8 +7,9 @@ class GraphicProcessor:
     def __init__(self, work_screen):
         self.screen = work_screen
 
-    def fill_work_screen(self, color):
+    def prepare_work_screen(self, color):
         self.screen.fill(color)
+        pygame.draw.rect(self.screen, FIRE_BRICK, (0, 0, SCREEN_WIDTH, INFO_PANEL_HEIGHT), 2)
 
     def draw_platform(self, platform):
         radius = platform.height // 2
@@ -50,11 +51,16 @@ class GraphicProcessor:
         elif brick.hardness == 3:
             self._brick(brick, ROYAL_BLUE, DARK_BLUE)
 
+    def draw_score(self, score):
+        font = pygame.font.SysFont('Courier New', 36)
+        score_text = font.render('SCORE : ' + str(score), 1, WHITE)
+        self.screen.blit(score_text, (10, 5))
+
 
 class Brick:
     def __init__(self, column_pos, line_pos, hardness):
         self.x = BRICK_WIDTH * column_pos
-        self.y = TOP_INDENT + BRICK_HEIGHT * line_pos
+        self.y = INFO_PANEL_HEIGHT + TOP_INDENT + BRICK_HEIGHT * line_pos
         self.hardness = hardness
         self.width = BRICK_WIDTH
         self.height = BRICK_HEIGHT
@@ -69,8 +75,8 @@ class Ball:
             self.y = y - self.radius
         else:
             self.y = y
-        self.dx = 5
-        self.dy = -5
+        self.dx = 4
+        self.dy = -4
 
     def move(self):
         """
@@ -81,7 +87,7 @@ class Ball:
             self.dx = -self.dx
         self.x += self.dx
 
-        if self.y + self.dy < self.radius:
+        if self.y + self.dy - INFO_PANEL_HEIGHT < self.radius:
             self.dy = -self.dy
         self.y += self.dy
 
@@ -105,6 +111,9 @@ class Ball:
             if game_object.x <= self.x <= game_object.x + game_object.width:
                 if self.y + self.radius >= game_object.y:
                     self.dy = -self.dy
+                    if (game_object.x <= self.x <= game_object.x + game_object.width // 5 or
+                            game_object.x + (game_object.width//5) * 4 <= self.x <= game_object.x + game_object.width):
+                        self.dx = -self.dx
                     collision = True
 
         if isinstance(game_object, Brick):
@@ -112,6 +121,7 @@ class Ball:
                 if game_object.y <= self.y + self.radius <= game_object.y:
                     if game_object.x <= self.x <= game_object.x + game_object.width:
                         self.dy = -self.dy
+                        self.dx = -self.dx
                         collision = True
                 if game_object.y + game_object.height >= self.y - self.radius >= game_object.y:
                     if game_object.x <= self.x <= game_object.x + game_object.width:
@@ -134,7 +144,7 @@ class Platform:
         self.height = PLATFORM_HEIGHT
         self.x = SCREEN_WIDTH // 2 - self.width
         self.y = SCREEN_HEIGHT - self.height - 1
-        self.dx = 5
+        self.dx = 7
         self.direction = 'stop'
 
     def move(self):
@@ -142,6 +152,18 @@ class Platform:
             self.x -= self.dx
         elif self.direction == 'right' and self.x + self.width <= SCREEN_WIDTH - self.dx:
             self.x += self.dx
+
+
+class InfoPanel:
+    def __init__(self):
+        self._score = 0
+
+    def set_score(self, score):
+        self._score += score
+        pass
+
+    def get_sore(self):
+        return self._score
 
 
 class GameLevelHandler:
@@ -154,6 +176,7 @@ class GameLevelHandler:
         self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
         self.level = LEVEL_01
         self.bricks = []
+        self.info_panel = InfoPanel()
 
         for k, line in enumerate(self.level):
             for i, hardness in enumerate(self.level[k]):
@@ -201,6 +224,7 @@ class GameLevelHandler:
             destroy_bricks = []
             for brick in self.bricks:
                 if ball.object_collision(brick):
+                    self.info_panel.set_score(10)
                     brick.hardness -= 1
                     if brick.hardness == 0:
                         destroy_bricks.append(brick)
@@ -220,7 +244,7 @@ class GameLevelHandler:
             self.clock.tick(FPS)
             # Обработка событий
             self.event_handler()
-            self.graphic_processor.fill_work_screen(BLACK)
+            self.graphic_processor.prepare_work_screen(BLACK)
 
             self.platform_handler()
 
@@ -229,6 +253,8 @@ class GameLevelHandler:
 
             for brick in self.bricks:
                 self.graphic_processor.draw_brick(brick)
+
+            self.graphic_processor.draw_score(self.info_panel.get_sore())
 
             pygame.display.flip()
 
