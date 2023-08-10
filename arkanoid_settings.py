@@ -36,6 +36,9 @@ DARK_RED = (139, 0, 0)
 ROYAL_BLUE = (65, 105, 225)
 DARK_BLUE = (0, 0, 139)
 
+#  Bonuses
+LIME_GREEN = (50, 205, 50)
+
 #  Brick size
 BRICK_WIDTH = 50
 BRICK_HEIGHT = 20

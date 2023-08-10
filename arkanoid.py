@@ -1,3 +1,5 @@
+from random import choice
+
 import pygame
 from pygame.locals import Rect
 
@@ -33,6 +35,13 @@ class GraphicProcessor:
                                               2)
                          )
 
+    def draw_power_bonus(self, bonus):
+        pygame.draw.rect(self.screen, LIME_GREEN, (bonus.x, bonus.y, bonus.width, bonus.height), border_radius=4)
+        pygame.draw.rect(self.screen, GREEN_YELLOW, (bonus.x + 2, bonus.y + 3, bonus.width - 4, 3), border_radius=60)
+        font = pygame.font.SysFont('System', bold=True, size=18)
+        symbol_type = font.render(bonus.power_type[0], 1, RED)
+        self.screen.blit(symbol_type, (bonus.x + bonus.width // 2 - 4, bonus.y + 2))
+
     def draw_ball(self, ball):
         x = ball.x
         y = ball.y
@@ -56,6 +65,20 @@ class GraphicProcessor:
         font = pygame.font.SysFont('Courier New', 36)
         score_text = font.render('SCORE : ' + str(score), 1, WHITE)
         self.screen.blit(score_text, (10, 5))
+
+
+class PowerBonus:
+    def __init__(self, x, y, power_type):
+        self.x = x
+        self.y = y
+        self.width = 40
+        self.height = 16
+        self.dy = 2
+        self.power_type = power_type
+
+    def move(self):
+        if self.y + self.height <= SCREEN_HEIGHT + self.height:
+            self.y += self.dy
 
 
 class Brick:
@@ -111,20 +134,20 @@ class Ball:
         ball_rect = Rect(self.x, self.y, self.radius, self.radius)
         game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
 
-        if isinstance(game_object, Platform):
-            if pygame.Rect.colliderect(ball_rect, game_object_rect):
-                collision = True
+        if pygame.Rect.colliderect(ball_rect, game_object_rect):
+            collision = True
+            if isinstance(game_object, Platform):
                 self.dy = -self.dy
                 if (game_object.x <= self.x <= game_object.x + game_object.width // 5 or
                         game_object.x + (game_object.width//5) * 4 <= self.x <= game_object.x + game_object.width):
                     self.dx = -self.dx
 
-        if isinstance(game_object, Brick):
-            if game_object.hardness > 0:
-                if pygame.Rect.colliderect(ball_rect, game_object_rect):
-                    collision = True
+            elif isinstance(game_object, Brick):
+                if game_object.hardness > 0:
                     self.dy = -self.dy
                     self.dx = -self.dx
+                else:
+                    collision = False
 
         return collision
 
@@ -143,6 +166,20 @@ class Platform:
             self.x -= self.dx
         elif self.direction == 'right' and self.x + self.width <= SCREEN_WIDTH - self.dx:
             self.x += self.dx
+
+    def object_collision(self, game_object):
+        collision = False
+        platform_rect = Rect(self.x, self.y, self.width, self.height)
+        game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
+
+        if pygame.Rect.colliderect(platform_rect, game_object_rect):
+            collision = True
+
+        return collision
+
+    def get_bonus(self, power_bonus):
+        if power_bonus.power_type == 'Expand_Platform':
+            self.width = self.width * 2
 
 
 class InfoPanel:
@@ -163,12 +200,13 @@ class GameLevelHandler:
         self.clock = pygame.time.Clock()
         self.graphic_processor = GraphicProcessor(work_screen)
         self.platform = Platform()
+        self.info_panel = InfoPanel()
         self.balls = []
         self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
         self.level = LEVEL_01
-        self.bricks = []
-        self.info_panel = InfoPanel()
+        self.power_bonuses = []
 
+        self.bricks = []
         for k, line in enumerate(self.level):
             for i, hardness in enumerate(self.level[k]):
                 if hardness != 0:
@@ -202,6 +240,23 @@ class GameLevelHandler:
         self.platform.move()
         self.graphic_processor.draw_platform(self.platform)
 
+    def power_bonus_handler(self, power_bonus):
+        power_bonus.move()
+        out_off_screen = False
+        if self.platform.object_collision(power_bonus):
+            self.platform.get_bonus(power_bonus)
+            return True
+        if power_bonus.x > SCREEN_HEIGHT:
+            out_off_screen = True
+        else:
+            self.graphic_processor.draw_power_bonus(power_bonus)
+        return out_off_screen
+
+    def create_bonus(self, bonus_x, bonus_y):
+        chance = {10: 1, 90: 2}
+        if choice([x for y in ([v] * k for k, v in chance.items()) for x in y]) == 1:
+            self.power_bonuses.append(PowerBonus(bonus_x, bonus_y, 'Expand_Platform'))
+
     def ball_handler(self, ball):
         if ball.on_platform:
             ball.move_with_platform(self.platform)
@@ -216,6 +271,7 @@ class GameLevelHandler:
             for brick in self.bricks:
                 if ball.object_collision(brick):
                     self.info_panel.set_score(10)
+                    self.create_bonus(brick.x, brick.y)
                     brick.hardness -= 1
                     if brick.hardness == 0:
                         destroy_bricks.append(brick)
@@ -244,6 +300,14 @@ class GameLevelHandler:
 
             for brick in self.bricks:
                 self.graphic_processor.draw_brick(brick)
+
+            out_off_screen_bonuses = []
+            for power_bonus in self.power_bonuses:
+                if self.power_bonus_handler(power_bonus):
+                    out_off_screen_bonuses.append(power_bonus)
+
+            for power_bonus in out_off_screen_bonuses:
+                self.power_bonuses.remove(power_bonus)
 
             self.graphic_processor.draw_score(self.info_panel.get_sore())
 
