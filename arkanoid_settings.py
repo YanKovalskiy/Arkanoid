@@ -11,7 +11,7 @@ INFO_PANEL_HEIGHT = 50
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 500 + TOP_INDENT + INFO_PANEL_HEIGHT
 
-#  Delay before refresh
+#  Frame rate to fps
 FPS = 60
 
 #  Colors

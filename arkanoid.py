@@ -1,4 +1,5 @@
 import pygame
+from pygame.locals import Rect
 
 from arkanoid_settings import *
 
@@ -107,33 +108,23 @@ class Ball:
 
     def object_collision(self, game_object):
         collision = False
+        ball_rect = Rect(self.x, self.y, self.radius, self.radius)
+        game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
+
         if isinstance(game_object, Platform):
-            if game_object.x <= self.x <= game_object.x + game_object.width:
-                if self.y + self.radius >= game_object.y:
-                    self.dy = -self.dy
-                    if (game_object.x <= self.x <= game_object.x + game_object.width // 5 or
-                            game_object.x + (game_object.width//5) * 4 <= self.x <= game_object.x + game_object.width):
-                        self.dx = -self.dx
-                    collision = True
+            if pygame.Rect.colliderect(ball_rect, game_object_rect):
+                collision = True
+                self.dy = -self.dy
+                if (game_object.x <= self.x <= game_object.x + game_object.width // 5 or
+                        game_object.x + (game_object.width//5) * 4 <= self.x <= game_object.x + game_object.width):
+                    self.dx = -self.dx
 
         if isinstance(game_object, Brick):
             if game_object.hardness > 0:
-                if game_object.y <= self.y + self.radius <= game_object.y:
-                    if game_object.x <= self.x <= game_object.x + game_object.width:
-                        self.dy = -self.dy
-                        self.dx = -self.dx
-                        collision = True
-                if game_object.y + game_object.height >= self.y - self.radius >= game_object.y:
-                    if game_object.x <= self.x <= game_object.x + game_object.width:
-                        self.dy = -self.dy
-                        collision = True
-                if self.y - self.radius > game_object.y and self.y + self.radius < game_object.y + game_object.height:
-                    if game_object.x <= self.x <= game_object.x + game_object.width:
-                        self.dx = -self.dx
-                        collision = True
-                    elif game_object.x >= self.x - self.radius >= game_object.x + game_object.width:
-                        self.dx = -self.dx
-                        collision = True
+                if pygame.Rect.colliderect(ball_rect, game_object_rect):
+                    collision = True
+                    self.dy = -self.dy
+                    self.dx = -self.dx
 
         return collision
 
