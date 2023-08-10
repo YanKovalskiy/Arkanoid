@@ -108,7 +108,8 @@ class Ball:
 
     def object_collision(self, game_object):
         collision = False
-        ball_rect = Rect(self.x, self.y, self.radius, self.radius)
+        side_square = 2 * self.radius / 2 ** 0.5
+        ball_rect = Rect(self.x, self.y, side_square, side_square)
         game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
 
         if isinstance(game_object, Platform):
@@ -124,7 +125,7 @@ class Ball:
                 if pygame.Rect.colliderect(ball_rect, game_object_rect):
                     collision = True
                     self.dy = -self.dy
-                    self.dx = -self.dx
+                    #self.dx = -self.dx
 
         return collision
 
