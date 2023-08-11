@@ -21,7 +21,7 @@ class SoundProcessor:
         self.hit_brick_hardness_3 = pygame.mixer.Sound('sounds/hit_brick_3.ogg')
         self.hit_brick_hardness_3.set_volume(0.1)
         self.get_bonus_point = pygame.mixer.Sound('sounds/get_bonus_point.ogg')
-        self.get_bonus_point.set_volume(0.2)
+        self.get_bonus_point.set_volume(0.1)
 
     def play_hit_platform(self):
         self.hit_platform.play()
@@ -99,10 +99,12 @@ class GraphicProcessor:
         elif brick.hardness == 3:
             self._brick(brick, ROYAL_BLUE, DARK_BLUE)
 
-    def draw_score(self, score):
+    def draw_info_panel(self, score, player_lives):
         font = pygame.font.SysFont('Courier New', bold=True, size=20)
         score_text = font.render('SCORE : ' + str(score), 1, BLACK)
         self.screen.blit(score_text, (10, 4))
+        lives_text = font.render('LIVE : ' + str(player_lives), 1, BLACK)
+        self.screen.blit(lives_text, (SCREEN_WIDTH - 110, 4))
 
 
 class PowerBonus:
@@ -220,17 +222,24 @@ class Platform:
 class InfoPanel:
     def __init__(self):
         self._score = 0
+        self._player_lives = NUMBER_PLAYER_LIVES
 
     def set_score(self, score):
         self._score += score
         pass
 
-    def get_sore(self):
+    def get_score(self):
         return self._score
+
+    def set_player_lives(self, lives):
+        self._player_lives = lives
+
+    def get_player_lives(self):
+        return self._player_lives
 
 
 class GameLevelHandler:
-    def __init__(self, work_screen, sound: SoundProcessor, player_lives):
+    def __init__(self, work_screen, sound: SoundProcessor, info_panel: InfoPanel):
         self.EXPAND_PLATFORM = 'E'
         self.ADD_BALLS = 'A'
         self.end_game = False
@@ -238,11 +247,10 @@ class GameLevelHandler:
         self.graphic_processor = GraphicProcessor(work_screen)
         self.sound = sound
         self.platform = Platform()
-        self.info_panel = InfoPanel()
+        self.info_panel = info_panel
         self.balls = []
         self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
         self.level = LEVEL_01
-        self.player_lives = player_lives
         self.power_bonuses = []
 
         self.bricks = []
@@ -336,7 +344,7 @@ class GameLevelHandler:
                 else:
                     self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                            self.platform.y, on_platform=True))
-                    self.player_lives -= 1
+                    self.info_panel.set_player_lives(self.info_panel.get_player_lives() - 1)
                     if self.EXPAND_PLATFORM in self.platform.power_bonuses:
                         self.platform.width = self.platform.width / 2
                     self.platform.power_bonuses.clear()
@@ -367,7 +375,7 @@ class GameLevelHandler:
             self.clock.tick(FPS)
 
             #  Test game over
-            if self.player_lives == 0:
+            if self.info_panel.get_player_lives() == 0:
                 self.end_game = True
 
             #  Event handling
@@ -386,11 +394,11 @@ class GameLevelHandler:
                 if self.power_bonus_handler(power_bonus):
                     self.power_bonuses.remove(power_bonus)
 
-            self.graphic_processor.draw_score(self.info_panel.get_sore())
+            self.graphic_processor.draw_info_panel(self.info_panel.get_score(), self.info_panel.get_player_lives())
 
             pygame.display.flip()
 
-        return self.end_game, self.player_lives
+        return self.end_game, self.info_panel
 
 
 def main():
@@ -400,11 +408,11 @@ def main():
     screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
     sound = SoundProcessor()
 
-    player_lives = NUMBER_PLAYER_LIVES
+    info = InfoPanel()
     game_over = False
     while not game_over:
-        level = GameLevelHandler(screen, sound, player_lives)
-        game_over, player_lives = level.main_loop()
+        level = GameLevelHandler(screen, sound, info)
+        game_over, info = level.main_loop()
 
     pygame.quit()
 
