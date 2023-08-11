@@ -13,12 +13,22 @@ class SoundProcessor:
         self.ball_out_of_screen = pygame.mixer.Sound('sounds/ball_out.ogg')
         self.ball_out_of_screen.set_volume(0.5)
         self.expand_platform = pygame.mixer.Sound('sounds/extend_panel.ogg')
+        self.expand_platform.set_volume(0.5)
         self.hit_brick_hardness_1 = pygame.mixer.Sound('sounds/hit_brick_1.ogg')
         self.hit_brick_hardness_1.set_volume(0.1)
         self.hit_brick_hardness_2 = pygame.mixer.Sound('sounds/hit_brick_2.ogg')
         self.hit_brick_hardness_2.set_volume(0.1)
         self.hit_brick_hardness_3 = pygame.mixer.Sound('sounds/hit_brick_3.ogg')
         self.hit_brick_hardness_3.set_volume(0.1)
+
+    def play_hit_platform(self):
+        self.hit_platform.play()
+
+    def play_ball_out(self):
+        self.ball_out_of_screen.play()
+
+    def play_expand_platform(self):
+        self.expand_platform.play()
 
     def play_hit_brick(self, hardness):
         if hardness == 1:
@@ -183,6 +193,7 @@ class Platform:
         self.y = SCREEN_HEIGHT - self.height - 1
         self.dx = 7
         self.direction = 'stop'
+        self.power_bonuses = set()
 
     def move(self):
         if self.direction == 'left' and self.x >= self.dx:
@@ -199,10 +210,6 @@ class Platform:
             collision = True
 
         return collision
-
-    def get_bonus(self, power_bonus):
-        if power_bonus.power_type == 'Expand_Platform':
-            self.width = self.width * 2
 
 
 class InfoPanel:
@@ -266,33 +273,58 @@ class GameLevelHandler:
 
     def power_bonus_handler(self, power_bonus):
         power_bonus.move()
-        out_off_screen = False
+
         if self.platform.object_collision(power_bonus):
-            self.sound.expand_platform.play()
-            self.platform.get_bonus(power_bonus)
+            if power_bonus.power_type not in self.platform.power_bonuses:
+                self.platform.power_bonuses.add(power_bonus.power_type)
+
+                if power_bonus.power_type == 'Expand_Platform':
+                    self.sound.play_expand_platform()
+                    self.platform.width = self.platform.width * 2
+
+                if power_bonus.power_type == 'Add_Two_Balls':
+                    if self.balls:
+                        add_ball = Ball(self.balls[0].x, self.balls[0].y, on_platform=False)
+                        add_ball.dx = -add_ball.dx
+                        self.balls.append(add_ball)
+                        add_ball = Ball(self.balls[0].x, self.balls[0].y, on_platform=False)
+                        add_ball.dy = -add_ball.dy
+                        self.balls.append(add_ball)
+                    else:
+                        self.balls.append(Ball(self.platform.x + self.platform.width // 2,
+                                               self.platform.y, on_platform=True))
+                        self.balls.append(Ball(self.platform.x + self.platform.width // 2,
+                                               self.platform.y, on_platform=True))
+            else:
+                self.info_panel.set_score(100)
             return True
-        if power_bonus.x > SCREEN_HEIGHT:
-            out_off_screen = True
         else:
-            self.graphic_processor.draw_power_bonus(power_bonus)
-        return out_off_screen
+            out_off_screen = False
+            if power_bonus.x > SCREEN_HEIGHT:
+                out_off_screen = True
+            else:
+                self.graphic_processor.draw_power_bonus(power_bonus)
+            return out_off_screen
 
     def create_bonus(self, bonus_x, bonus_y):
-        chance = {10: 1, 90: 2}
+        chance = {30: 1, 70: 2}
         if choice([x for y in ([v] * k for k, v in chance.items()) for x in y]) == 1:
-            self.power_bonuses.append(PowerBonus(bonus_x, bonus_y, 'Expand_Platform'))
+            power_type = choice(['Expand_Platform', 'Add_Two_Balls'])
+            self.power_bonuses.append(PowerBonus(bonus_x, bonus_y, power_type))
 
     def ball_handler(self, ball):
         if ball.on_platform:
             ball.move_with_platform(self.platform)
         else:
             if ball.move():
-                self.sound.ball_out_of_screen.play()
+                self.sound.play_ball_out()
                 self.balls.remove(ball)
-                self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
+                if not self.balls:
+                    self.balls.append(Ball(self.platform.x + self.platform.width // 2,
+                                           self.platform.y, on_platform=True))
             else:
                 if ball.object_collision(self.platform):
-                    self.sound.hit_platform.play()
+                    self.sound.play_hit_platform()
 
                 for brick in reversed(self.bricks):
                     if ball.object_collision(brick):
