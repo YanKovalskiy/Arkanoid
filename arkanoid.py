@@ -20,6 +20,8 @@ class SoundProcessor:
         self.hit_brick_hardness_2.set_volume(0.1)
         self.hit_brick_hardness_3 = pygame.mixer.Sound('sounds/hit_brick_3.ogg')
         self.hit_brick_hardness_3.set_volume(0.1)
+        self.get_bonus_point = pygame.mixer.Sound('sounds/get_bonus_point.ogg')
+        self.get_bonus_point.set_volume(0.2)
 
     def play_hit_platform(self):
         self.hit_platform.play()
@@ -29,6 +31,9 @@ class SoundProcessor:
 
     def play_expand_platform(self):
         self.expand_platform.play()
+
+    def play_get_bonus_point(self):
+        self.get_bonus_point.play()
 
     def play_hit_brick(self, hardness):
         if hardness == 1:
@@ -296,6 +301,7 @@ class GameLevelHandler:
                         self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                                self.platform.y, on_platform=True))
             else:
+                self.sound.play_get_bonus_point()
                 self.info_panel.set_score(100)
             return True
         else:
