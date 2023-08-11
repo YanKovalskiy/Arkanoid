@@ -77,7 +77,7 @@ class GraphicProcessor:
         pygame.draw.rect(self.screen, LIME_GREEN, (bonus.x, bonus.y, bonus.width, bonus.height), border_radius=4)
         pygame.draw.rect(self.screen, GREEN_YELLOW, (bonus.x + 2, bonus.y + 3, bonus.width - 4, 3), border_radius=60)
         font = pygame.font.SysFont('System', bold=True, size=18)
-        symbol_type = font.render(bonus.power_type[0], 1, RED)
+        symbol_type = font.render(bonus.power_type, 1, RED)
         self.screen.blit(symbol_type, (bonus.x + bonus.width // 2 - 4, bonus.y + 2))
 
     def draw_ball(self, ball):
@@ -231,6 +231,8 @@ class InfoPanel:
 
 class GameLevelHandler:
     def __init__(self, work_screen, sound: SoundProcessor, player_lives):
+        self.EXPAND_PLATFORM = 'E'
+        self.ADD_BALLS = 'A'
         self.end_game = False
         self.clock = pygame.time.Clock()
         self.graphic_processor = GraphicProcessor(work_screen)
@@ -284,11 +286,11 @@ class GameLevelHandler:
             if power_bonus.power_type not in self.platform.power_bonuses:
                 self.platform.power_bonuses.add(power_bonus.power_type)
 
-                if power_bonus.power_type == 'Expand_Platform':
+                if power_bonus.power_type == self.EXPAND_PLATFORM:
                     self.sound.play_expand_platform()
                     self.platform.width = self.platform.width * 2
 
-                if power_bonus.power_type == 'Add_Two_Balls':
+                if power_bonus.power_type == self.ADD_BALLS:
                     if self.balls:
                         add_ball = Ball(self.balls[0].x, self.balls[0].y, on_platform=False)
                         add_ball.dx = -add_ball.dx
@@ -311,12 +313,13 @@ class GameLevelHandler:
                 out_off_screen = True
             else:
                 self.graphic_processor.draw_power_bonus(power_bonus)
-            return out_off_screen
+
+        return out_off_screen
 
     def create_bonus(self, bonus_x, bonus_y):
-        chance = {30: 1, 70: 2}
+        chance = {49: 1, 51: 2}
         if choice([x for y in ([v] * k for k, v in chance.items()) for x in y]) == 1:
-            power_type = choice(['Expand_Platform', 'Add_Two_Balls'])
+            power_type = choice([self.EXPAND_PLATFORM, self.ADD_BALLS])
             self.power_bonuses.append(PowerBonus(bonus_x, bonus_y, power_type))
 
     def ball_handler(self, ball):
@@ -326,10 +329,17 @@ class GameLevelHandler:
             if ball.move():
                 self.sound.play_ball_out()
                 self.balls.remove(ball)
-                if not self.balls:
+                if self.balls:
+                    if len(self.balls) == 1 and self.ADD_BALLS in self.platform.power_bonuses:
+                        self.platform.power_bonuses.remove(self.ADD_BALLS)
+
+                else:
                     self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                            self.platform.y, on_platform=True))
                     self.player_lives -= 1
+                    if self.EXPAND_PLATFORM in self.platform.power_bonuses:
+                        self.platform.width = self.platform.width / 2
+                    self.platform.power_bonuses.clear()
             else:
                 if ball.object_collision(self.platform):
                     self.sound.play_hit_platform()
