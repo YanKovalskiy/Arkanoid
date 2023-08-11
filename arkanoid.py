@@ -6,13 +6,36 @@ from pygame.locals import Rect
 from arkanoid_settings import *
 
 
+class SoundProcessor:
+    def __init__(self):
+        self.hit_platform = pygame.mixer.Sound('sounds/hit_platform.ogg')
+        self.hit_platform.set_volume(0.2)
+        self.ball_out_of_screen = pygame.mixer.Sound('sounds/ball_out.ogg')
+        self.ball_out_of_screen.set_volume(0.5)
+        self.expand_platform = pygame.mixer.Sound('sounds/extend_panel.ogg')
+        self.hit_brick_hardness_1 = pygame.mixer.Sound('sounds/hit_brick_1.ogg')
+        self.hit_brick_hardness_1.set_volume(0.1)
+        self.hit_brick_hardness_2 = pygame.mixer.Sound('sounds/hit_brick_2.ogg')
+        self.hit_brick_hardness_2.set_volume(0.1)
+        self.hit_brick_hardness_3 = pygame.mixer.Sound('sounds/hit_brick_3.ogg')
+        self.hit_brick_hardness_3.set_volume(0.1)
+
+    def play_hit_brick(self, hardness):
+        if hardness == 1:
+            self.hit_brick_hardness_1.play()
+        elif hardness == 2:
+            self.hit_brick_hardness_2.play()
+        elif hardness == 3:
+            self.hit_brick_hardness_3.play()
+
+
 class GraphicProcessor:
     def __init__(self, work_screen):
         self.screen = work_screen
 
     def prepare_work_screen(self, color):
         self.screen.fill(color)
-        pygame.draw.rect(self.screen, FIRE_BRICK, (0, 0, SCREEN_WIDTH, INFO_PANEL_HEIGHT), 2)
+        pygame.draw.rect(self.screen, SILVER, (0, 0, SCREEN_WIDTH, INFO_PANEL_HEIGHT))
 
     def draw_platform(self, platform):
         radius = platform.height // 2
@@ -62,9 +85,9 @@ class GraphicProcessor:
             self._brick(brick, ROYAL_BLUE, DARK_BLUE)
 
     def draw_score(self, score):
-        font = pygame.font.SysFont('Courier New', 36)
-        score_text = font.render('SCORE : ' + str(score), 1, WHITE)
-        self.screen.blit(score_text, (10, 5))
+        font = pygame.font.SysFont('Courier New', bold=True, size=20)
+        score_text = font.render('SCORE : ' + str(score), 1, BLACK)
+        self.screen.blit(score_text, (10, 4))
 
 
 class PowerBonus:
@@ -195,10 +218,11 @@ class InfoPanel:
 
 
 class GameLevelHandler:
-    def __init__(self, work_screen):
+    def __init__(self, work_screen, sound: SoundProcessor):
         self.end_game = False
         self.clock = pygame.time.Clock()
         self.graphic_processor = GraphicProcessor(work_screen)
+        self.sound = sound
         self.platform = Platform()
         self.info_panel = InfoPanel()
         self.balls = []
@@ -244,6 +268,7 @@ class GameLevelHandler:
         power_bonus.move()
         out_off_screen = False
         if self.platform.object_collision(power_bonus):
+            self.sound.expand_platform.play()
             self.platform.get_bonus(power_bonus)
             return True
         if power_bonus.x > SCREEN_HEIGHT:
@@ -262,22 +287,21 @@ class GameLevelHandler:
             ball.move_with_platform(self.platform)
         else:
             if ball.move():
-                ball.set_ball_initial_position(self.platform.x + self.platform.width // 2,
-                                               self.platform.y, on_platform=True)
+                self.sound.ball_out_of_screen.play()
+                self.balls.remove(ball)
+                self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
+            else:
+                if ball.object_collision(self.platform):
+                    self.sound.hit_platform.play()
 
-            ball.object_collision(self.platform)
-
-            destroy_bricks = []
-            for brick in self.bricks:
-                if ball.object_collision(brick):
-                    self.info_panel.set_score(10)
-                    self.create_bonus(brick.x, brick.y)
-                    brick.hardness -= 1
-                    if brick.hardness == 0:
-                        destroy_bricks.append(brick)
-
-            for brick in destroy_bricks:
-                self.bricks.remove(brick)
+                for brick in reversed(self.bricks):
+                    if ball.object_collision(brick):
+                        self.sound.play_hit_brick(brick.hardness)
+                        self.info_panel.set_score(10)
+                        self.create_bonus(brick.x, brick.y)
+                        brick.hardness -= 1
+                        if brick.hardness == 0:
+                            self.bricks.remove(brick)
 
         self.graphic_processor.draw_ball(ball)
 
@@ -301,13 +325,9 @@ class GameLevelHandler:
             for brick in self.bricks:
                 self.graphic_processor.draw_brick(brick)
 
-            out_off_screen_bonuses = []
-            for power_bonus in self.power_bonuses:
+            for power_bonus in reversed(self.power_bonuses):
                 if self.power_bonus_handler(power_bonus):
-                    out_off_screen_bonuses.append(power_bonus)
-
-            for power_bonus in out_off_screen_bonuses:
-                self.power_bonuses.remove(power_bonus)
+                    self.power_bonuses.remove(power_bonus)
 
             self.graphic_processor.draw_score(self.info_panel.get_sore())
 
@@ -317,13 +337,15 @@ class GameLevelHandler:
 
 
 def main():
+    pygame.mixer.pre_init(44100, -16, 1, 512)
     pygame.init()
     pygame.display.set_caption(SCREEN_TITLE)
     screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
+    sound = SoundProcessor()
 
     game_over = False
     while not game_over:
-        level = GameLevelHandler(screen)
+        level = GameLevelHandler(screen, sound)
         game_over = level.main_loop()
 
     pygame.quit()

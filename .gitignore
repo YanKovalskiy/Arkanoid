@@ -4,5 +4,6 @@ __pycache__/
 Lib/
 Scripts/
 include/
+sounds/mp3
 
 pyvenv.cfg

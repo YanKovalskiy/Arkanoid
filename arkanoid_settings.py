@@ -5,7 +5,7 @@ SCREEN_TITLE = 'Arkanoid'
 TOP_INDENT = 50
 
 #  Info panel size
-INFO_PANEL_HEIGHT = 50
+INFO_PANEL_HEIGHT = 30
 
 #  Window size
 SCREEN_WIDTH = 800
