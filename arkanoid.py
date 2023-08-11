@@ -230,7 +230,7 @@ class InfoPanel:
 
 
 class GameLevelHandler:
-    def __init__(self, work_screen, sound: SoundProcessor):
+    def __init__(self, work_screen, sound: SoundProcessor, player_lives):
         self.end_game = False
         self.clock = pygame.time.Clock()
         self.graphic_processor = GraphicProcessor(work_screen)
@@ -240,6 +240,7 @@ class GameLevelHandler:
         self.balls = []
         self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
         self.level = LEVEL_01
+        self.player_lives = player_lives
         self.power_bonuses = []
 
         self.bricks = []
@@ -328,6 +329,7 @@ class GameLevelHandler:
                 if not self.balls:
                     self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                            self.platform.y, on_platform=True))
+                    self.player_lives -= 1
             else:
                 if ball.object_collision(self.platform):
                     self.sound.play_hit_platform()
@@ -340,6 +342,8 @@ class GameLevelHandler:
                         brick.hardness -= 1
                         if brick.hardness == 0:
                             self.bricks.remove(brick)
+                            if not self.bricks:
+                                self.end_game = True
 
         self.graphic_processor.draw_ball(ball)
 
@@ -349,9 +353,14 @@ class GameLevelHandler:
         :rtype: bool
         """
         while not self.end_game:
-            # Частота обновления экрана
+            #  Frame rate to fps
             self.clock.tick(FPS)
-            # Обработка событий
+
+            #  Test game over
+            if self.player_lives == 0:
+                self.end_game = True
+
+            #  Event handling
             self.event_handler()
             self.graphic_processor.prepare_work_screen(BLACK)
 
@@ -371,7 +380,7 @@ class GameLevelHandler:
 
             pygame.display.flip()
 
-        return self.end_game
+        return self.end_game, self.player_lives
 
 
 def main():
@@ -381,10 +390,11 @@ def main():
     screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
     sound = SoundProcessor()
 
+    player_lives = NUMBER_PLAYER_LIVES
     game_over = False
     while not game_over:
-        level = GameLevelHandler(screen, sound)
-        game_over = level.main_loop()
+        level = GameLevelHandler(screen, sound, player_lives)
+        game_over, player_lives = level.main_loop()
 
     pygame.quit()
 
