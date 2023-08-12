@@ -137,7 +137,7 @@ class GraphicProcessor:
         screensaver.fill(BLACK)
         screensaver.set_alpha(200)
         self.screen.blit(screensaver, (0, 0))
-        font = pygame.font.SysFont('System', bold=True, size=72)
+        font = pygame.font.SysFont('System', bold=False, size=72)
         text = font.render(info_text, 1, RED)
         self.screen.blit(text, text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)))
         pygame.display.update()
@@ -298,7 +298,7 @@ class InfoPanel:
 
 
 class GameLevelHandler:
-    def __init__(self, graphic: GraphicProcessor, sound: SoundProcessor, info_panel: InfoPanel):
+    def __init__(self, graphic: GraphicProcessor, sound: SoundProcessor, info_panel: InfoPanel, level_drawing):
         self.EXPAND_PLATFORM = 'E'
         self.ADD_BALLS = 'B'
         self.ADD_LASERS = 'L'
@@ -312,7 +312,7 @@ class GameLevelHandler:
         self.laser_rays = []
         self.balls = []
         self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
-        self.level = LEVEL_01
+        self.level = level_drawing
         self.power_bonuses = []
 
         self.bricks = []
@@ -523,8 +523,10 @@ def main():
 
     game_over = False
     type_ending = EXIT
+    levels = (LEVEL_01, LEVEL_02)
+    level_counter = 0
     while not game_over:
-        level = GameLevelHandler(graph, sound, info)
+        level = GameLevelHandler(graph, sound, info, levels[level_counter])
         type_ending = level.main_loop()
         if type_ending == EXIT:
             game_over = True
@@ -536,6 +538,10 @@ def main():
         elif type_ending == PASSED:
             info.set_player_lives(info.get_player_lives() + 1)
             info.set_score(1000)
+            level_counter += 1
+            graph.show_screensaver('LEVEL IS COMPLETE')
+            sound.play_get_bonus_point()
+            time.sleep(3)
 
     if type_ending == GAME_OVER:
         main()
