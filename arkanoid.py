@@ -1,3 +1,4 @@
+import time
 from random import choice
 
 import pygame
@@ -11,7 +12,7 @@ class SoundProcessor:
         self.hit_platform = pygame.mixer.Sound('sounds/hit_platform.ogg')
         self.hit_platform.set_volume(0.2)
         self.ball_out_of_screen = pygame.mixer.Sound('sounds/ball_out.ogg')
-        self.ball_out_of_screen.set_volume(0.5)
+        self.ball_out_of_screen.set_volume(0.3)
         self.expand_platform = pygame.mixer.Sound('sounds/extend_panel.ogg')
         self.expand_platform.set_volume(0.5)
         self.hit_brick_hardness_1 = pygame.mixer.Sound('sounds/hit_brick_1.ogg')
@@ -23,6 +24,8 @@ class SoundProcessor:
         self.get_bonus_point = pygame.mixer.Sound('sounds/get_bonus_point.ogg')
         self.get_bonus_point.set_volume(0.1)
         self.laser_shot = pygame.mixer.Sound('sounds/laser-shot.ogg')
+        self.laser_shot.set_volume(0.1)
+        self.game_over = pygame.mixer.Sound('sounds/game_over.ogg')
         self.laser_shot.set_volume(0.1)
 
     def play_hit_platform(self):
@@ -39,6 +42,9 @@ class SoundProcessor:
 
     def play_laser_shot(self, extra_repetition=0):
         self.laser_shot.play(loops=extra_repetition)
+
+    def play_game_over(self):
+        self.game_over.play()
 
     def play_hit_brick(self, hardness):
         if hardness == 1:
@@ -125,6 +131,16 @@ class GraphicProcessor:
         self.screen.blit(score_text, (10, 4))
         lives_text = font.render('LIVE : ' + str(player_lives), 1, BLACK)
         self.screen.blit(lives_text, (SCREEN_WIDTH - 110, 4))
+
+    def show_screensaver(self, info_text):
+        screensaver = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        screensaver.fill(BLACK)
+        screensaver.set_alpha(200)
+        self.screen.blit(screensaver, (0, 0))
+        font = pygame.font.SysFont('System', bold=True, size=72)
+        text = font.render(info_text, 1, RED)
+        self.screen.blit(text, text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)))
+        pygame.display.update()
 
 
 class PowerBonus:
@@ -282,14 +298,14 @@ class InfoPanel:
 
 
 class GameLevelHandler:
-    def __init__(self, work_screen, sound: SoundProcessor, info_panel: InfoPanel):
+    def __init__(self, graphic: GraphicProcessor, sound: SoundProcessor, info_panel: InfoPanel):
         self.EXPAND_PLATFORM = 'E'
         self.ADD_BALLS = 'B'
         self.ADD_LASERS = 'L'
         self.end_game = False
         self.type_end_game = ''
         self.clock = pygame.time.Clock()
-        self.graphic_processor = GraphicProcessor(work_screen)
+        self.graphic_processor = graphic
         self.sound = sound
         self.platform = Platform()
         self.info_panel = info_panel
@@ -502,19 +518,27 @@ def main():
     pygame.display.set_caption(SCREEN_TITLE)
     screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
     sound = SoundProcessor()
-
     info = InfoPanel()
+    graph = GraphicProcessor(screen)
+
     game_over = False
+    type_ending = EXIT
     while not game_over:
-        level = GameLevelHandler(screen, sound, info)
+        level = GameLevelHandler(graph, sound, info)
         type_ending = level.main_loop()
         if type_ending == EXIT:
             game_over = True
         elif type_ending == GAME_OVER:
+            graph.show_screensaver('GAME OVER')
+            sound.play_game_over()
+            time.sleep(4)
             game_over = True
         elif type_ending == PASSED:
             info.set_player_lives(info.get_player_lives() + 1)
             info.set_score(1000)
+
+    if type_ending == GAME_OVER:
+        main()
 
     pygame.quit()
 
