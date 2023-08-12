@@ -47,8 +47,11 @@ BRICK_HEIGHT = 20
 PLATFORM_WIDTH = 72
 PLATFORM_HEIGHT = 16
 
-# Number of player's lives
+#  Number of player's lives
 NUMBER_PLAYER_LIVES = 3
+
+#  Laser firing delay
+LASER_FIRE_DELAY = 15
 
 #  Levels
 LEVEL_01 = ((1,	1, 2, 3, 3,	3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 1),

@@ -22,6 +22,8 @@ class SoundProcessor:
         self.hit_brick_hardness_3.set_volume(0.1)
         self.get_bonus_point = pygame.mixer.Sound('sounds/get_bonus_point.ogg')
         self.get_bonus_point.set_volume(0.1)
+        self.laser_shot = pygame.mixer.Sound('sounds/laser-shot.ogg')
+        self.laser_shot.set_volume(0.1)
 
     def play_hit_platform(self):
         self.hit_platform.play()
@@ -34,6 +36,9 @@ class SoundProcessor:
 
     def play_get_bonus_point(self):
         self.get_bonus_point.play()
+
+    def play_laser_shot(self, extra_repetition=0):
+        self.laser_shot.play(loops=extra_repetition)
 
     def play_hit_brick(self, hardness):
         if hardness == 1:
@@ -72,6 +77,18 @@ class GraphicProcessor:
                                               platform.width - radius*2,
                                               2)
                          )
+        if platform.laser:
+            pygame.draw.line(self.screen,
+                             SILVER,
+                             (platform.x+radius, platform.y),
+                             (platform.x+radius, platform.y - 3),
+                             2)
+
+            pygame.draw.line(self.screen,
+                             SILVER,
+                             (platform.x + platform.width - radius - 2, platform.y),
+                             (platform.x + platform.width - radius - 2, platform.y - 3),
+                             2)
 
     def draw_power_bonus(self, bonus):
         pygame.draw.rect(self.screen, LIME_GREEN, (bonus.x, bonus.y, bonus.width, bonus.height), border_radius=4)
@@ -98,6 +115,9 @@ class GraphicProcessor:
             self._brick(brick, RED, DARK_RED)
         elif brick.hardness == 3:
             self._brick(brick, ROYAL_BLUE, DARK_BLUE)
+
+    def draw_laser_ray(self, laser_ray):
+        pygame.draw.line(self.screen, WHITE, [laser_ray.x, laser_ray.y], [laser_ray.x, laser_ray.y + 3], 2)
 
     def draw_info_panel(self, score, player_lives):
         font = pygame.font.SysFont('Courier New', bold=True, size=20)
@@ -128,6 +148,26 @@ class Brick:
         self.hardness = hardness
         self.width = BRICK_WIDTH
         self.height = BRICK_HEIGHT
+
+
+class LaserRay:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.dy = 10
+
+    def move(self):
+        self.y -= self.dy
+
+    def object_collision(self, game_object):
+        collision = False
+        laser_ray_rect = Rect(self.x, self.y, 2, 3)
+        game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
+
+        if pygame.Rect.colliderect(laser_ray_rect, game_object_rect):
+            collision = True
+
+        return collision
 
 
 class Ball:
@@ -200,6 +240,9 @@ class Platform:
         self.y = SCREEN_HEIGHT - self.height - 1
         self.dx = 7
         self.direction = 'stop'
+        self.laser = False
+        self.laser_fire = False
+        self.fire_delay = LASER_FIRE_DELAY
         self.power_bonuses = set()
 
     def move(self):
@@ -241,13 +284,15 @@ class InfoPanel:
 class GameLevelHandler:
     def __init__(self, work_screen, sound: SoundProcessor, info_panel: InfoPanel):
         self.EXPAND_PLATFORM = 'E'
-        self.ADD_BALLS = 'A'
+        self.ADD_BALLS = 'B'
+        self.ADD_LASERS = 'L'
         self.end_game = False
         self.clock = pygame.time.Clock()
         self.graphic_processor = GraphicProcessor(work_screen)
         self.sound = sound
         self.platform = Platform()
         self.info_panel = info_panel
+        self.laser_rays = []
         self.balls = []
         self.balls.append(Ball(self.platform.x + self.platform.width // 2, self.platform.y, on_platform=True))
         self.level = LEVEL_01
@@ -275,6 +320,9 @@ class GameLevelHandler:
                     self.platform.direction = 'right'
                 elif event.key == pygame.K_ESCAPE:
                     self.end_game = True
+                elif event.key == pygame.K_LALT:
+                    if self.platform.laser:
+                        self.platform.laser_fire = True
                 elif event.key == pygame.K_SPACE:
                     for ball in self.balls:
                         ball.on_platform = False
@@ -282,9 +330,27 @@ class GameLevelHandler:
             elif event.type == pygame.KEYUP:
                 if event.key in [pygame.K_LEFT, pygame.K_RIGHT]:
                     self.platform.direction = 'stop'
+                elif event.key == pygame.K_LALT:
+                    self.platform.laser_fire = False
+
+    def laser_fire(self, platform):
+        if self.platform.laser_fire:
+            if self.platform.fire_delay == 0:
+                y = platform.y + 3
+                #  Left laser fire
+                x = platform.x + platform.height // 2
+                self.laser_rays.append(LaserRay(x, y))
+                #  Right laser fire
+                x = platform.x + platform.width - platform.height // 2
+                self.laser_rays.append(LaserRay(x, y))
+                self.sound.play_laser_shot()
+                self.platform.fire_delay = LASER_FIRE_DELAY
+            else:
+                self.platform.fire_delay -= 1
 
     def platform_handler(self):
         self.platform.move()
+        self.laser_fire(self.platform)
         self.graphic_processor.draw_platform(self.platform)
 
     def power_bonus_handler(self, power_bonus):
@@ -311,6 +377,9 @@ class GameLevelHandler:
                                                self.platform.y, on_platform=True))
                         self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                                self.platform.y, on_platform=True))
+                if power_bonus.power_type == self.ADD_LASERS:
+                    self.sound.play_laser_shot()
+                    self.platform.laser = True
             else:
                 self.sound.play_get_bonus_point()
                 self.info_panel.set_score(100)
@@ -325,9 +394,9 @@ class GameLevelHandler:
         return out_off_screen
 
     def create_bonus(self, bonus_x, bonus_y):
-        chance = {49: 1, 51: 2}
+        chance = {10: 1, 90: 2}
         if choice([x for y in ([v] * k for k, v in chance.items()) for x in y]) == 1:
-            power_type = choice([self.EXPAND_PLATFORM, self.ADD_BALLS])
+            power_type = choice([self.EXPAND_PLATFORM, self.ADD_BALLS, self.ADD_LASERS])
             self.power_bonuses.append(PowerBonus(bonus_x, bonus_y, power_type))
 
     def ball_handler(self, ball):
@@ -340,13 +409,14 @@ class GameLevelHandler:
                 if self.balls:
                     if len(self.balls) == 1 and self.ADD_BALLS in self.platform.power_bonuses:
                         self.platform.power_bonuses.remove(self.ADD_BALLS)
-
                 else:
                     self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                            self.platform.y, on_platform=True))
                     self.info_panel.set_player_lives(self.info_panel.get_player_lives() - 1)
                     if self.EXPAND_PLATFORM in self.platform.power_bonuses:
                         self.platform.width = self.platform.width / 2
+                    if self.ADD_LASERS in self.platform.power_bonuses:
+                        self.platform.laser = False
                     self.platform.power_bonuses.clear()
             else:
                 if ball.object_collision(self.platform):
@@ -364,6 +434,25 @@ class GameLevelHandler:
                                 self.end_game = True
 
         self.graphic_processor.draw_ball(ball)
+
+    def laser_ray_handler(self, laser_ray):
+        laser_ray.move()
+        if laser_ray.y > INFO_PANEL_HEIGHT:
+            for brick in reversed(self.bricks):
+                if laser_ray.object_collision(brick):
+                    self.sound.play_hit_brick(brick.hardness)
+                    self.info_panel.set_score(10)
+                    self.create_bonus(brick.x, brick.y)
+                    brick.hardness -= 1
+                    if brick.hardness == 0:
+                        self.bricks.remove(brick)
+                        if not self.bricks:
+                            self.end_game = True
+                    self.laser_rays.remove(laser_ray)
+                    break
+            self.graphic_processor.draw_laser_ray(laser_ray)
+        else:
+            self.laser_rays.remove(laser_ray)
 
     def main_loop(self):
         """
@@ -386,6 +475,9 @@ class GameLevelHandler:
 
             for ball in self.balls:
                 self.ball_handler(ball)
+
+            for laser_ray in reversed(self.laser_rays):
+                self.laser_ray_handler(laser_ray)
 
             for brick in self.bricks:
                 self.graphic_processor.draw_brick(brick)
