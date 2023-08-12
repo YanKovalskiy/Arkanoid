@@ -1,6 +1,11 @@
 #  Title of game's window
 SCREEN_TITLE = 'Arkanoid'
 
+#  Game level ending types
+EXIT = 'exit'
+GAME_OVER = 'game over'
+PASSED = 'level passed'
+
 #  Indent from the top of the screen
 TOP_INDENT = 50
 

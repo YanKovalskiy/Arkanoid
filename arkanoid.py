@@ -287,6 +287,7 @@ class GameLevelHandler:
         self.ADD_BALLS = 'B'
         self.ADD_LASERS = 'L'
         self.end_game = False
+        self.type_end_game = ''
         self.clock = pygame.time.Clock()
         self.graphic_processor = GraphicProcessor(work_screen)
         self.sound = sound
@@ -311,6 +312,7 @@ class GameLevelHandler:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.end_game = True
+                self.type_end_game = EXIT
                 break
 
             elif event.type == pygame.KEYDOWN:
@@ -320,6 +322,8 @@ class GameLevelHandler:
                     self.platform.direction = 'right'
                 elif event.key == pygame.K_ESCAPE:
                     self.end_game = True
+                    self.type_end_game = EXIT
+                    break
                 elif event.key == pygame.K_LALT:
                     if self.platform.laser:
                         self.platform.laser_fire = True
@@ -383,15 +387,12 @@ class GameLevelHandler:
             else:
                 self.sound.play_get_bonus_point()
                 self.info_panel.set_score(100)
-            return True
+            self.power_bonuses.remove(power_bonus)
         else:
-            out_off_screen = False
             if power_bonus.x > SCREEN_HEIGHT:
-                out_off_screen = True
+                self.power_bonuses.remove(power_bonus)
             else:
                 self.graphic_processor.draw_power_bonus(power_bonus)
-
-        return out_off_screen
 
     def create_bonus(self, bonus_x, bonus_y):
         chance = {10: 1, 90: 2}
@@ -432,6 +433,7 @@ class GameLevelHandler:
                             self.bricks.remove(brick)
                             if not self.bricks:
                                 self.end_game = True
+                                self.type_end_game = PASSED
 
         self.graphic_processor.draw_ball(ball)
 
@@ -448,6 +450,7 @@ class GameLevelHandler:
                         self.bricks.remove(brick)
                         if not self.bricks:
                             self.end_game = True
+                            self.type_end_game = PASSED
                     self.laser_rays.remove(laser_ray)
                     break
             self.graphic_processor.draw_laser_ray(laser_ray)
@@ -466,6 +469,7 @@ class GameLevelHandler:
             #  Test game over
             if self.info_panel.get_player_lives() == 0:
                 self.end_game = True
+                self.type_end_game = GAME_OVER
 
             #  Event handling
             self.event_handler()
@@ -483,14 +487,13 @@ class GameLevelHandler:
                 self.graphic_processor.draw_brick(brick)
 
             for power_bonus in reversed(self.power_bonuses):
-                if self.power_bonus_handler(power_bonus):
-                    self.power_bonuses.remove(power_bonus)
+                self.power_bonus_handler(power_bonus)
 
             self.graphic_processor.draw_info_panel(self.info_panel.get_score(), self.info_panel.get_player_lives())
 
             pygame.display.flip()
 
-        return self.end_game, self.info_panel
+        return self.type_end_game
 
 
 def main():
@@ -504,7 +507,14 @@ def main():
     game_over = False
     while not game_over:
         level = GameLevelHandler(screen, sound, info)
-        game_over, info = level.main_loop()
+        type_ending = level.main_loop()
+        if type_ending == EXIT:
+            game_over = True
+        elif type_ending == GAME_OVER:
+            game_over = True
+        elif type_ending == PASSED:
+            info.set_player_lives(info.get_player_lives() + 1)
+            info.set_score(1000)
 
     pygame.quit()
 
