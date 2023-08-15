@@ -212,12 +212,6 @@ class Ball:
         self.x = platform.x + platform.width // 2
         self.y = platform.y - self.radius
 
-    def set_ball_initial_position(self, x, y, on_platform):
-        self.x = x
-        self.y = y
-        self.on_platform = on_platform
-
-
 class Platform:
     def __init__(self):
         self.width = PLATFORM_WIDTH
