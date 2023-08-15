@@ -132,13 +132,13 @@ class GraphicProcessor:
         lives_text = font.render('LIVE : ' + str(player_lives), 1, BLACK)
         self.screen.blit(lives_text, (SCREEN_WIDTH - 110, 4))
 
-    def show_screensaver(self, info_text, color):
+    def show_screensaver(self, info_text):
         screensaver = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         screensaver.fill(BLACK)
         screensaver.set_alpha(200)
         self.screen.blit(screensaver, (0, 0))
         font = pygame.font.SysFont('System', bold=False, size=72)
-        text = font.render(info_text, 1, color)
+        text = font.render(info_text, 1, RED)
         self.screen.blit(text, text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)))
         pygame.display.update()
 
@@ -241,7 +241,6 @@ class Ball:
             elif isinstance(game_object, Brick):
                 if game_object.hardness > 0:
                     self.dy = -self.dy
-                 #   self.dx = -self.dx
                 else:
                     collision = False
 
@@ -430,10 +429,14 @@ class GameLevelHandler:
                     self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                            self.platform.y, on_platform=True))
                     self.info_panel.set_player_lives(self.info_panel.get_player_lives() - 1)
+
                     if self.EXPAND_PLATFORM in self.platform.power_bonuses:
                         self.platform.width = self.platform.width / 2
+
                     if self.ADD_LASERS in self.platform.power_bonuses:
                         self.platform.laser = False
+                        self.platform.laser_fire = False
+
                     self.platform.power_bonuses.clear()
             else:
                 if ball.object_collision(self.platform):
@@ -524,20 +527,14 @@ def main():
     game_over = False
     type_ending = EXIT
     levels = (LEVEL_01, LEVEL_02)
-    level_counter = 1
+    level_counter = 0
     while not game_over:
-        if level_counter > len(levels):
-            graph.show_screensaver('GAME IS COMPLETE', GREEN_YELLOW)
-            sound.play_get_bonus_point()
-            time.sleep(3)
-            type_ending = GAME_OVER
-            break
-        level = GameLevelHandler(graph, sound, info, levels[level_counter - 1])
+        level = GameLevelHandler(graph, sound, info, levels[level_counter])
         type_ending = level.main_loop()
         if type_ending == EXIT:
             game_over = True
         elif type_ending == GAME_OVER:
-            graph.show_screensaver('GAME OVER', RED)
+            graph.show_screensaver('GAME OVER')
             sound.play_game_over()
             time.sleep(4)
             game_over = True
@@ -545,7 +542,7 @@ def main():
             info.set_player_lives(info.get_player_lives() + 1)
             info.set_score(1000)
             level_counter += 1
-            graph.show_screensaver('LEVEL IS COMPLETE', GREEN_YELLOW)
+            graph.show_screensaver('LEVEL IS COMPLETE')
             sound.play_get_bonus_point()
             time.sleep(3)
 
