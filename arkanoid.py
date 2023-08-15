@@ -170,20 +170,12 @@ class LaserRay:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.width = 2
+        self.height = 3
         self.dy = 10
 
     def move(self):
         self.y -= self.dy
-
-    def object_collision(self, game_object):
-        collision = False
-        laser_ray_rect = Rect(self.x, self.y, 2, 3)
-        game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
-
-        if pygame.Rect.colliderect(laser_ray_rect, game_object_rect):
-            collision = True
-
-        return collision
 
 
 class Ball:
@@ -266,16 +258,6 @@ class Platform:
         elif self.direction == 'right' and self.x + self.width <= SCREEN_WIDTH - self.dx:
             self.x += self.dx
 
-    def object_collision(self, game_object):
-        collision = False
-        platform_rect = Rect(self.x, self.y, self.width, self.height)
-        game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
-
-        if pygame.Rect.colliderect(platform_rect, game_object_rect):
-            collision = True
-
-        return collision
-
 
 class InfoPanel:
     def __init__(self):
@@ -339,17 +321,16 @@ class GameLevelHandler:
                     self.end_game = True
                     self.type_end_game = EXIT
                     break
-                elif event.key == pygame.K_LALT:
-                    if self.platform.laser:
-                        self.platform.laser_fire = True
                 elif event.key == pygame.K_SPACE:
                     for ball in self.balls:
                         ball.on_platform = False
+                    if self.platform.laser:
+                        self.platform.laser_fire = True
 
             elif event.type == pygame.KEYUP:
                 if event.key in [pygame.K_LEFT, pygame.K_RIGHT]:
                     self.platform.direction = 'stop'
-                elif event.key == pygame.K_LALT:
+                elif event.key == pygame.K_SPACE:
                     self.platform.laser_fire = False
 
     def laser_fire(self, platform):
@@ -375,7 +356,7 @@ class GameLevelHandler:
     def power_bonus_handler(self, power_bonus):
         power_bonus.move()
 
-        if self.platform.object_collision(power_bonus):
+        if object_collision(self.platform, power_bonus):
             if power_bonus.power_type not in self.platform.power_bonuses:
                 self.platform.power_bonuses.add(power_bonus.power_type)
 
@@ -460,7 +441,7 @@ class GameLevelHandler:
         laser_ray.move()
         if laser_ray.y > INFO_PANEL_HEIGHT:
             for brick in reversed(self.bricks):
-                if laser_ray.object_collision(brick):
+                if object_collision(laser_ray, brick):
                     self.sound.play_hit_brick(brick.hardness)
                     self.info_panel.set_score(10)
                     self.create_bonus(brick.x, brick.y)
@@ -513,6 +494,21 @@ class GameLevelHandler:
             pygame.display.flip()
 
         return self.type_end_game
+
+
+def object_collision(game_object, test_game_object):
+        game_object_rect = Rect(game_object.x,
+                                game_object.y,
+                                game_object.width,
+                                game_object.height)
+        test_game_object_rect = Rect(test_game_object.x,
+                                     test_game_object.y,
+                                     test_game_object.width,
+                                     test_game_object.height)
+
+        if pygame.Rect.colliderect(test_game_object_rect, game_object_rect):
+            return True
+        return False
 
 
 def main():
