@@ -526,7 +526,7 @@ def main():
 
     game_over = False
     type_ending = EXIT
-    levels = (LEVEL_01, LEVEL_02)
+    levels = (LEVEL_01, LEVEL_02, LEVEL_03)
     level_counter = 0
     while not game_over:
         level = GameLevelHandler(graph, sound, info, levels[level_counter])
