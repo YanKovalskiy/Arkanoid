@@ -217,27 +217,6 @@ class Ball:
         self.y = y
         self.on_platform = on_platform
 
-    def object_collision(self, game_object):
-        collision = False
-        ball_rect = Rect(self.x, self.y, self.radius, self.radius)
-        game_object_rect = Rect(game_object.x, game_object.y, game_object.width, game_object.height)
-
-        if pygame.Rect.colliderect(ball_rect, game_object_rect):
-            collision = True
-            if isinstance(game_object, Platform):
-                self.dy = -self.dy
-                if (game_object.x <= self.x <= game_object.x + game_object.width // 5 or
-                        game_object.x + (game_object.width//5) * 4 <= self.x <= game_object.x + game_object.width):
-                    self.dx = -self.dx
-
-            elif isinstance(game_object, Brick):
-                if game_object.hardness > 0:
-                    self.dy = -self.dy
-                else:
-                    collision = False
-
-        return collision
-
 
 class Platform:
     def __init__(self):
@@ -420,15 +399,24 @@ class GameLevelHandler:
 
                     self.platform.power_bonuses.clear()
             else:
-                if ball.object_collision(self.platform):
+                if object_collision(ball, self.platform):
                     self.sound.play_hit_platform()
+                    ball.dy = -ball.dy
+                    if (self.platform.x <= ball.x <= self.platform.x + self.platform.width // 5 or
+                            self.platform.x + (self.platform.width // 5) * 4 <= ball.x <= self.platform.x +
+                            self.platform.width):
+                        ball.dx = -ball.dx
 
                 for brick in reversed(self.bricks):
-                    if ball.object_collision(brick):
+                    if object_collision(ball, brick):
                         self.sound.play_hit_brick(brick.hardness)
                         self.info_panel.set_score(10)
                         self.create_bonus(brick.x, brick.y)
+
+                        if brick.hardness > 0:
+                            ball.dy = -ball.dy
                         brick.hardness -= 1
+
                         if brick.hardness == 0:
                             self.bricks.remove(brick)
                             if not self.bricks:
@@ -497,10 +485,17 @@ class GameLevelHandler:
 
 
 def object_collision(game_object, test_game_object):
+        if isinstance(game_object, Ball):
+            game_object_width = game_object_height = game_object.radius
+        else:
+            game_object_width = game_object.width
+            game_object_height = game_object.height
+
         game_object_rect = Rect(game_object.x,
                                 game_object.y,
-                                game_object.width,
-                                game_object.height)
+                                game_object_width,
+                                game_object_height)
+
         test_game_object_rect = Rect(test_game_object.x,
                                      test_game_object.y,
                                      test_game_object.width,
@@ -523,9 +518,9 @@ def main():
     game_over = False
     type_ending = EXIT
     levels = (LEVEL_01, LEVEL_02, LEVEL_03)
-    level_counter = 0
+    level_counter = 1
     while not game_over:
-        level = GameLevelHandler(graph, sound, info, levels[level_counter])
+        level = GameLevelHandler(graph, sound, info, levels[level_counter - 1])
         type_ending = level.main_loop()
         if type_ending == EXIT:
             game_over = True
@@ -538,7 +533,12 @@ def main():
             info.set_player_lives(info.get_player_lives() + 1)
             info.set_score(1000)
             level_counter += 1
-            graph.show_screensaver('LEVEL IS COMPLETE')
+            if level_counter > len(levels):
+                graph.show_screensaver('GAME COMPLETE')
+                game_over = True
+                type_ending = EXIT
+            else:
+                graph.show_screensaver('LEVEL IS COMPLETE')
             sound.play_get_bonus_point()
             time.sleep(3)
 
