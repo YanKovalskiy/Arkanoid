@@ -212,6 +212,7 @@ class Ball:
         self.x = platform.x + platform.width // 2
         self.y = platform.y - self.radius
 
+
 class Platform:
     def __init__(self):
         self.width = PLATFORM_WIDTH
@@ -479,25 +480,25 @@ class GameLevelHandler:
 
 
 def object_collision(game_object, test_game_object):
-        if isinstance(game_object, Ball):
-            game_object_width = game_object_height = game_object.radius
-        else:
-            game_object_width = game_object.width
-            game_object_height = game_object.height
+    if isinstance(game_object, Ball):
+        game_object_width = game_object_height = game_object.radius
+    else:
+        game_object_width = game_object.width
+        game_object_height = game_object.height
 
-        game_object_rect = Rect(game_object.x,
-                                game_object.y,
-                                game_object_width,
-                                game_object_height)
+    game_object_rect = Rect(game_object.x,
+                            game_object.y,
+                            game_object_width,
+                            game_object_height)
 
-        test_game_object_rect = Rect(test_game_object.x,
-                                     test_game_object.y,
-                                     test_game_object.width,
-                                     test_game_object.height)
+    test_game_object_rect = Rect(test_game_object.x,
+                                 test_game_object.y,
+                                 test_game_object.width,
+                                 test_game_object.height)
 
-        if pygame.Rect.colliderect(test_game_object_rect, game_object_rect):
-            return True
-        return False
+    if pygame.Rect.colliderect(test_game_object_rect, game_object_rect):
+        return True
+    return False
 
 
 def main():
