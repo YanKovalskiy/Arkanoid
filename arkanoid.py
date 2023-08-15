@@ -340,17 +340,19 @@ class GameLevelHandler:
 
                 if power_bonus.power_type == self.ADD_BALLS:
                     if self.balls:
-                        add_ball = Ball(self.balls[0].x, self.balls[0].y, on_platform=False)
-                        add_ball.dx = -add_ball.dx
+                        ball = self.balls[0]
+                        add_ball = Ball(ball.x, ball.y, on_platform=False)
+                        add_ball.dx = -ball.dx
                         self.balls.append(add_ball)
-                        add_ball = Ball(self.balls[0].x, self.balls[0].y, on_platform=False)
-                        add_ball.dy = -add_ball.dy
+                        add_ball = Ball(ball.x, ball.y, on_platform=False)
+                        add_ball.dy = -ball.dy
                         self.balls.append(add_ball)
                     else:
                         self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                                self.platform.y, on_platform=True))
                         self.balls.append(Ball(self.platform.x + self.platform.width // 2,
                                                self.platform.y, on_platform=True))
+
                 if power_bonus.power_type == self.ADD_LASERS:
                     self.sound.play_laser_shot()
                     self.platform.laser = True
