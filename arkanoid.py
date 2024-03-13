@@ -251,6 +251,26 @@ class Platform:
         elif self.direction == 'right' and self.x + self.width <= SCREEN_WIDTH - self.dx:
             self.x += self.dx
 
+    def fire_from_laser(self, laser_rays, sound):
+        if self.laser_fire:
+            if self.fire_delay == 0:
+                y = self.y + 3
+                #  Left laser fire
+                x = self.x + self.height // 2
+                laser_rays.append(LaserRay(x, y))
+                #  Right laser fire
+                x = self.x + self.width - self.height // 2
+                laser_rays.append(LaserRay(x, y))
+                sound.play_laser_shot()
+                self.fire_delay = LASER_FIRE_DELAY
+            else:
+                self.fire_delay -= 1
+
+    def handler(self, laser_rays, graphic_processor, sound):
+        self.move()
+        self.fire_from_laser(laser_rays, sound)
+        graphic_processor.draw_platform(self)
+
 
 class InfoPanel:
     def __init__(self):
@@ -326,25 +346,7 @@ class GameLevelHandler:
                 elif event.key == pygame.K_SPACE:
                     self.platform.laser_fire = False
 
-    def laser_fire(self, platform):
-        if self.platform.laser_fire:
-            if self.platform.fire_delay == 0:
-                y = platform.y + 3
-                #  Left laser fire
-                x = platform.x + platform.height // 2
-                self.laser_rays.append(LaserRay(x, y))
-                #  Right laser fire
-                x = platform.x + platform.width - platform.height // 2
-                self.laser_rays.append(LaserRay(x, y))
-                self.sound.play_laser_shot()
-                self.platform.fire_delay = LASER_FIRE_DELAY
-            else:
-                self.platform.fire_delay -= 1
 
-    def platform_handler(self):
-        self.platform.move()
-        self.laser_fire(self.platform)
-        self.graphic_processor.draw_platform(self.platform)
 
     def power_bonus_handler(self, power_bonus):
         power_bonus.move()
@@ -479,7 +481,7 @@ class GameLevelHandler:
             self.event_handler()
             self.graphic_processor.prepare_work_screen(BLACK)
 
-            self.platform_handler()
+            self.platform.handler(self.laser_rays, self.graphic_processor, self.sound)
 
             for ball in self.balls:
                 self.ball_handler(ball)
