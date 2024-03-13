@@ -1,3 +1,4 @@
+import random
 import time
 from random import choice
 
@@ -388,8 +389,7 @@ class GameLevelHandler:
                 self.graphic_processor.draw_power_bonus(power_bonus)
 
     def create_bonus(self, bonus_x, bonus_y):
-        chance = {10: 1, 90: 2}
-        if choice([x for y in ([v] * k for k, v in chance.items()) for x in y]) == 1:
+        if random.randint(1, 100) <= 10:  # 10%
             power_type = choice([self.EXPAND_PLATFORM, self.ADD_BALLS, self.ADD_LASERS])
             self.power_bonuses.append(PowerBonus(bonus_x, bonus_y, power_type))
 
