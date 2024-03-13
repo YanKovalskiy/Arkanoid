@@ -144,12 +144,17 @@ class GraphicProcessor:
         pygame.display.update()
 
 
-class PowerBonus:
-    def __init__(self, x, y, power_type):
+class GameObject:
+    def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
-        self.width = 40
-        self.height = 16
+        self.width = width
+        self.height = height
+
+
+class PowerBonus(GameObject):
+    def __init__(self, x, y, power_type):
+        super().__init__(x, y, width=40, height=16)
         self.dy = 2
         self.power_type = power_type
 
@@ -158,7 +163,7 @@ class PowerBonus:
             self.y += self.dy
 
 
-class Brick:
+class Brick(GameObject):
     @staticmethod
     def get_x(column_pos):
         return BRICK_WIDTH * column_pos
@@ -168,26 +173,23 @@ class Brick:
         return INFO_PANEL_HEIGHT + TOP_INDENT + BRICK_HEIGHT * line_pos
 
     def __init__(self, column_pos, line_pos, hardness):
-        self.x = self.get_x(column_pos)
-        self.y = self.get_y(line_pos)
+        super().__init__(x=self.get_x(column_pos),
+                         y=self.get_y(line_pos),
+                         width=BRICK_WIDTH,
+                         height=BRICK_HEIGHT)
         self.hardness = hardness
-        self.width = BRICK_WIDTH
-        self.height = BRICK_HEIGHT
 
 
-class LaserRay:
+class LaserRay(GameObject):
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.width = 2
-        self.height = 3
+        super().__init__(x, y, width=2, height=3)
         self.dy = 10
 
     def move(self):
         self.y -= self.dy
 
 
-class Ball:
+class Ball(GameObject):
     @staticmethod
     def get_y(y, radius, on_platform):
         if on_platform:
@@ -197,8 +199,10 @@ class Ball:
     def __init__(self, x, y, on_platform):
         self.on_platform = on_platform
         self.radius = 7
-        self.x = x
-        self.y = self.get_y(y, self.radius, self.on_platform)
+        super().__init__(x=x,
+                         y=self.get_y(y, self.radius, self.on_platform),
+                         width=self.radius,
+                         height=self.radius)
         self.dx = 4
         self.dy = -4
 
@@ -225,7 +229,7 @@ class Ball:
         self.y = platform.y - self.radius
 
 
-class Platform:
+class Platform(GameObject):
     @staticmethod
     def get_x(width):
         return SCREEN_WIDTH // 2 - width
@@ -235,10 +239,10 @@ class Platform:
         return SCREEN_HEIGHT - height - 1
 
     def __init__(self):
-        self.width = PLATFORM_WIDTH
-        self.height = PLATFORM_HEIGHT
-        self.x = self.get_x(self.width)
-        self.y = self.get_y(self.height)
+        super().__init__(x=self.get_x(PLATFORM_WIDTH),
+                         y=self.get_y(PLATFORM_HEIGHT),
+                         width=PLATFORM_WIDTH,
+                         height=PLATFORM_HEIGHT)
         self.dx = 7
         self.direction = 'stop'
         self.laser = False
