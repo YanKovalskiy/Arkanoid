@@ -151,6 +151,22 @@ class GameObject:
         self.width = width
         self.height = height
 
+    def collision(self, test_game_object):
+
+        game_object_rect = Rect(self.x,
+                                self.y,
+                                self.width,
+                                self.height)
+
+        test_game_object_rect = Rect(test_game_object.x,
+                                     test_game_object.y,
+                                     test_game_object.width,
+                                     test_game_object.height)
+
+        if pygame.Rect.colliderect(test_game_object_rect, game_object_rect):
+            return True
+        return False
+
 
 class PowerBonus(GameObject):
     def __init__(self, x, y, power_type):
@@ -356,7 +372,8 @@ class GameLevelHandler:
     def power_bonus_handler(self, power_bonus):
         power_bonus.move()
 
-        if object_collision(self.platform, power_bonus):
+        # if object_collision(self.platform, power_bonus):
+        if power_bonus.collision(self.platform):
             if power_bonus.power_type not in self.platform.power_bonuses:
                 self.platform.power_bonuses.add(power_bonus.power_type)
 
@@ -421,7 +438,7 @@ class GameLevelHandler:
 
                     self.platform.power_bonuses.clear()
             else:
-                if object_collision(ball, self.platform):
+                if ball.collision(self.platform):
                     self.sound.play_hit_platform()
                     ball.dy = -ball.dy
                     if (self.platform.x <= ball.x <= self.platform.x + self.platform.width // 5 or
@@ -430,7 +447,7 @@ class GameLevelHandler:
                         ball.dx = -ball.dx
 
                 for brick in reversed(self.bricks):
-                    if object_collision(ball, brick):
+                    if brick.collision(ball):
                         self.sound.play_hit_brick(brick.hardness)
                         self.info_panel.set_score(10)
                         self.create_bonus(brick.x, brick.y)
@@ -451,7 +468,7 @@ class GameLevelHandler:
         laser_ray.move()
         if laser_ray.y > INFO_PANEL_HEIGHT:
             for brick in reversed(self.bricks):
-                if object_collision(laser_ray, brick):
+                if brick.collision(laser_ray):
                     self.sound.play_hit_brick(brick.hardness)
                     self.info_panel.set_score(10)
                     self.create_bonus(brick.x, brick.y)
@@ -504,28 +521,6 @@ class GameLevelHandler:
             pygame.display.flip()
 
         return self.type_end_game
-
-
-def object_collision(game_object, test_game_object):
-    if isinstance(game_object, Ball):
-        game_object_width = game_object_height = game_object.radius
-    else:
-        game_object_width = game_object.width
-        game_object_height = game_object.height
-
-    game_object_rect = Rect(game_object.x,
-                            game_object.y,
-                            game_object_width,
-                            game_object_height)
-
-    test_game_object_rect = Rect(test_game_object.x,
-                                 test_game_object.y,
-                                 test_game_object.width,
-                                 test_game_object.height)
-
-    if pygame.Rect.colliderect(test_game_object_rect, game_object_rect):
-        return True
-    return False
 
 
 def main():
