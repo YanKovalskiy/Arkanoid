@@ -158,9 +158,17 @@ class PowerBonus:
 
 
 class Brick:
+    @staticmethod
+    def get_x(column_pos):
+        return BRICK_WIDTH * column_pos
+
+    @staticmethod
+    def get_y(line_pos):
+        return INFO_PANEL_HEIGHT + TOP_INDENT + BRICK_HEIGHT * line_pos
+
     def __init__(self, column_pos, line_pos, hardness):
-        self.x = BRICK_WIDTH * column_pos
-        self.y = INFO_PANEL_HEIGHT + TOP_INDENT + BRICK_HEIGHT * line_pos
+        self.x = self.get_x(column_pos)
+        self.y = self.get_y(line_pos)
         self.hardness = hardness
         self.width = BRICK_WIDTH
         self.height = BRICK_HEIGHT
@@ -179,14 +187,17 @@ class LaserRay:
 
 
 class Ball:
+    @staticmethod
+    def get_y(y, radius, on_platform):
+        if on_platform:
+            y = y - radius
+        return y
+
     def __init__(self, x, y, on_platform):
         self.on_platform = on_platform
         self.radius = 7
         self.x = x
-        if self.on_platform:
-            self.y = y - self.radius
-        else:
-            self.y = y
+        self.y = self.get_y(y, self.radius, self.on_platform)
         self.dx = 4
         self.dy = -4
 
@@ -214,11 +225,19 @@ class Ball:
 
 
 class Platform:
+    @staticmethod
+    def get_x(width):
+        return SCREEN_WIDTH // 2 - width
+
+    @staticmethod
+    def get_y(height):
+        return SCREEN_HEIGHT - height - 1
+
     def __init__(self):
         self.width = PLATFORM_WIDTH
         self.height = PLATFORM_HEIGHT
-        self.x = SCREEN_WIDTH // 2 - self.width
-        self.y = SCREEN_HEIGHT - self.height - 1
+        self.x = self.get_x(self.width)
+        self.y = self.get_y(self.height)
         self.dx = 7
         self.direction = 'stop'
         self.laser = False
