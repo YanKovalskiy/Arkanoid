@@ -107,7 +107,7 @@ class GraphicProcessor:
     def draw_ball(self, ball):
         x = ball.x
         y = ball.y
-        radius = ball.radius
+        radius = ball.width
         pygame.draw.circle(self.screen, SILVER, (x, y), radius)
         pygame.draw.circle(self.screen, WHITE, (x - radius // 2, y - radius // 2), radius // 2)
 
@@ -214,11 +214,11 @@ class Ball(GameObject):
 
     def __init__(self, x, y, on_platform):
         self.on_platform = on_platform
-        self.radius = 7
+        radius = 7
         super().__init__(x=x,
-                         y=self.get_y(y, self.radius, self.on_platform),
-                         width=self.radius,
-                         height=self.radius)
+                         y=self.get_y(y, radius, self.on_platform),
+                         width=radius,
+                         height=radius)
         self.dx = 4
         self.dy = -4
 
@@ -227,11 +227,11 @@ class Ball(GameObject):
 
         :return: bool True - out of screen, False - else
          """
-        if self.x + self.dx > SCREEN_WIDTH - self.radius or self.x + self.dx < self.radius:
+        if self.x + self.dx > SCREEN_WIDTH - self.width or self.x + self.dx < self.width:  # width = radius
             self.dx = -self.dx
         self.x += self.dx
 
-        if self.y + self.dy - INFO_PANEL_HEIGHT < self.radius:
+        if self.y + self.dy - INFO_PANEL_HEIGHT < self.width:  # width = radius
             self.dy = -self.dy
         self.y += self.dy
 
@@ -242,7 +242,7 @@ class Ball(GameObject):
 
     def move_with_platform(self, platform):
         self.x = platform.x + platform.width // 2
-        self.y = platform.y - self.radius
+        self.y = platform.y - self.width  # width = radius
 
 
 class Platform(GameObject):
